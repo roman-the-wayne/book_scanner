@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$BookModel {
 
- String? get id; String? get title; String? get author; int? get year; String? get description; String? get thumbnailUrl;
+ String? get id; String? get title; String? get author; int? get year; String? get description; String? get thumbnailUrl; bool get isRead; bool get isLent; String? get borrowerName; int? get rating;
 /// Create a copy of BookModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $BookModelCopyWith<BookModel> get copyWith => _$BookModelCopyWithImpl<BookModel>
 @override
 bool operator ==(Object other) {
   final _this = this as BookModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.author, _this.author) || other.author == _this.author)&&(identical(other.year, _this.year) || other.year == _this.year)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.thumbnailUrl, _this.thumbnailUrl) || other.thumbnailUrl == _this.thumbnailUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.author, _this.author) || other.author == _this.author)&&(identical(other.year, _this.year) || other.year == _this.year)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.thumbnailUrl, _this.thumbnailUrl) || other.thumbnailUrl == _this.thumbnailUrl)&&(identical(other.isRead, _this.isRead) || other.isRead == _this.isRead)&&(identical(other.isLent, _this.isLent) || other.isLent == _this.isLent)&&(identical(other.borrowerName, _this.borrowerName) || other.borrowerName == _this.borrowerName)&&(identical(other.rating, _this.rating) || other.rating == _this.rating));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as BookModel;
-  return Object.hash(runtimeType,_this.id,_this.title,_this.author,_this.year,_this.description,_this.thumbnailUrl);
+  return Object.hash(runtimeType,_this.id,_this.title,_this.author,_this.year,_this.description,_this.thumbnailUrl,_this.isRead,_this.isLent,_this.borrowerName,_this.rating);
 }
 
 @override
 String toString() {
   final _this = this as BookModel;
-  return 'BookModel(id: ${_this.id}, title: ${_this.title}, author: ${_this.author}, year: ${_this.year}, description: ${_this.description}, thumbnailUrl: ${_this.thumbnailUrl})';
+  return 'BookModel(id: ${_this.id}, title: ${_this.title}, author: ${_this.author}, year: ${_this.year}, description: ${_this.description}, thumbnailUrl: ${_this.thumbnailUrl}, isRead: ${_this.isRead}, isLent: ${_this.isLent}, borrowerName: ${_this.borrowerName}, rating: ${_this.rating})';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $BookModelCopyWith<$Res>  {
   factory $BookModelCopyWith(BookModel value, $Res Function(BookModel) _then) = _$BookModelCopyWithImpl;
 @useResult
 $Res call({
- String? id, String? title, String? author, int? year, String? description, String? thumbnailUrl
+ String? id, String? title, String? author, int? year, String? description, String? thumbnailUrl, bool isRead, bool isLent, String? borrowerName, int? rating
 });
 
 
@@ -71,7 +71,7 @@ class _$BookModelCopyWithImpl<$Res>
 
 /// Create a copy of BookModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? title = freezed,Object? author = freezed,Object? year = freezed,Object? description = freezed,Object? thumbnailUrl = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? title = freezed,Object? author = freezed,Object? year = freezed,Object? description = freezed,Object? thumbnailUrl = freezed,Object? isRead = null,Object? isLent = null,Object? borrowerName = freezed,Object? rating = freezed,}) {
   return _then(BookModel(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -79,7 +79,11 @@ as String?,author: freezed == author ? _self.author : author // ignore: cast_nul
 as String?,year: freezed == year ? _self.year : year // ignore: cast_nullable_to_non_nullable
 as int?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,isRead: null == isRead ? _self.isRead : isRead // ignore: cast_nullable_to_non_nullable
+as bool,isLent: null == isLent ? _self.isLent : isLent // ignore: cast_nullable_to_non_nullable
+as bool,borrowerName: freezed == borrowerName ? _self.borrowerName : borrowerName // ignore: cast_nullable_to_non_nullable
+as String?,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -161,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? id,  String? title,  String? author,  int? year,  String? description,  String? thumbnailUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? id,  String? title,  String? author,  int? year,  String? description,  String? thumbnailUrl,  bool isRead,  bool isLent,  String? borrowerName,  int? rating)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BookModel() when $default != null:
-return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_that.thumbnailUrl);case _:
+return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_that.thumbnailUrl,_that.isRead,_that.isLent,_that.borrowerName,_that.rating);case _:
   return orElse();
 
 }
@@ -182,10 +186,10 @@ return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? id,  String? title,  String? author,  int? year,  String? description,  String? thumbnailUrl)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? id,  String? title,  String? author,  int? year,  String? description,  String? thumbnailUrl,  bool isRead,  bool isLent,  String? borrowerName,  int? rating)  $default,) {final _that = this;
 switch (_that) {
 case _BookModel():
-return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_that.thumbnailUrl);}
+return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_that.thumbnailUrl,_that.isRead,_that.isLent,_that.borrowerName,_that.rating);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -199,10 +203,10 @@ return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? id,  String? title,  String? author,  int? year,  String? description,  String? thumbnailUrl)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? id,  String? title,  String? author,  int? year,  String? description,  String? thumbnailUrl,  bool isRead,  bool isLent,  String? borrowerName,  int? rating)?  $default,) {final _that = this;
 switch (_that) {
 case _BookModel() when $default != null:
-return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_that.thumbnailUrl);case _:
+return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_that.thumbnailUrl,_that.isRead,_that.isLent,_that.borrowerName,_that.rating);case _:
   return null;
 
 }
@@ -214,7 +218,7 @@ return $default(_that.id,_that.title,_that.author,_that.year,_that.description,_
 @JsonSerializable()
 
 class _BookModel extends BookModel {
-  const _BookModel({this.id, this.title, this.author, this.year, this.description, this.thumbnailUrl}): super._();
+  const _BookModel({this.id, this.title, this.author, this.year, this.description, this.thumbnailUrl, this.isRead = false, this.isLent = false, this.borrowerName, this.rating}): super._();
   factory _BookModel.fromJson(Map<String, dynamic> json) => _$BookModelFromJson(json);
 
 @override final  String? id;
@@ -223,6 +227,10 @@ class _BookModel extends BookModel {
 @override final  int? year;
 @override final  String? description;
 @override final  String? thumbnailUrl;
+@override@JsonKey() final  bool isRead;
+@override@JsonKey() final  bool isLent;
+@override final  String? borrowerName;
+@override final  int? rating;
 
 /// Create a copy of BookModel
 /// with the given fields replaced by the non-null parameter values.
@@ -237,18 +245,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookModel&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.year, year) || other.year == year)&&(identical(other.description, description) || other.description == description)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookModel&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.year, year) || other.year == year)&&(identical(other.description, description) || other.description == description)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.isRead, isRead) || other.isRead == isRead)&&(identical(other.isLent, isLent) || other.isLent == isLent)&&(identical(other.borrowerName, borrowerName) || other.borrowerName == borrowerName)&&(identical(other.rating, rating) || other.rating == rating));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,title,author,year,description,thumbnailUrl);
+    return Object.hash(runtimeType,id,title,author,year,description,thumbnailUrl,isRead,isLent,borrowerName,rating);
 }
 
 @override
 String toString() {
-    return 'BookModel(id: $id, title: $title, author: $author, year: $year, description: $description, thumbnailUrl: $thumbnailUrl)';
+    return 'BookModel(id: $id, title: $title, author: $author, year: $year, description: $description, thumbnailUrl: $thumbnailUrl, isRead: $isRead, isLent: $isLent, borrowerName: $borrowerName, rating: $rating)';
 }
 
 
@@ -259,7 +267,7 @@ abstract mixin class _$BookModelCopyWith<$Res> implements $BookModelCopyWith<$Re
   factory _$BookModelCopyWith(_BookModel value, $Res Function(_BookModel) _then) = __$BookModelCopyWithImpl;
 @override @useResult
 $Res call({
- String? id, String? title, String? author, int? year, String? description, String? thumbnailUrl
+ String? id, String? title, String? author, int? year, String? description, String? thumbnailUrl, bool isRead, bool isLent, String? borrowerName, int? rating
 });
 
 
@@ -276,7 +284,7 @@ class __$BookModelCopyWithImpl<$Res>
 
 /// Create a copy of BookModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? title = freezed,Object? author = freezed,Object? year = freezed,Object? description = freezed,Object? thumbnailUrl = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? title = freezed,Object? author = freezed,Object? year = freezed,Object? description = freezed,Object? thumbnailUrl = freezed,Object? isRead = null,Object? isLent = null,Object? borrowerName = freezed,Object? rating = freezed,}) {
   return _then(_BookModel(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -284,7 +292,11 @@ as String?,author: freezed == author ? _self.author : author // ignore: cast_nul
 as String?,year: freezed == year ? _self.year : year // ignore: cast_nullable_to_non_nullable
 as int?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,isRead: null == isRead ? _self.isRead : isRead // ignore: cast_nullable_to_non_nullable
+as bool,isLent: null == isLent ? _self.isLent : isLent // ignore: cast_nullable_to_non_nullable
+as bool,borrowerName: freezed == borrowerName ? _self.borrowerName : borrowerName // ignore: cast_nullable_to_non_nullable
+as String?,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

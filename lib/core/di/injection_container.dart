@@ -21,6 +21,7 @@ import '../../features/library/domain/usecases/update_book.dart';
 import '../../features/library/domain/usecases/delete_book.dart';
 import '../../features/library/presentation/bloc/library_bloc.dart';
 import '../../features/library/presentation/bloc/online_search_bloc/online_search_bloc.dart';
+import '../theme/theme_cubit.dart';
 
 final sl = GetIt.instance; // sl = service locator
 
@@ -63,7 +64,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => DeleteBook(sl()));
   sl.registerLazySingleton(() => SearchBooksOnline(sl()));
 
-  // ─── BLoC ───────────────────────────────────
+  // ─── BLoC / Cubit ───────────────────────────
+  sl.registerFactory(() => ThemeCubit(sharedPreferences: sl()));
   sl.registerFactory(() => BookScannerBloc(scanBooks: sl()));
   sl.registerFactory(
     () => LibraryBloc(

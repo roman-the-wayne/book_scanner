@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/di/injection_container.dart';
 import 'core/navigation/app_router.dart';
+import 'core/theme/theme_cubit.dart';
 import 'features/library/presentation/bloc/library_bloc.dart';
 import 'features/library/presentation/bloc/library_event.dart';
 
@@ -19,16 +20,36 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<LibraryBloc>(
-      create: (_) => sl<LibraryBloc>()..add(LoadLibrary()),
-      child: MaterialApp.router(
-        title: 'Сканер книг',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-          useMaterial3: true,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ThemeCubit>(create: (_) => sl<ThemeCubit>()),
+        BlocProvider<LibraryBloc>(
+          create: (_) => sl<LibraryBloc>()..add(LoadLibrary()),
         ),
-        routerConfig: appRouter,
+      ],
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp.router(
+            title: 'Сканер книг',
+            debugShowCheckedModeBanner: false,
+            themeMode: themeMode,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.indigo,
+                brightness: Brightness.light,
+              ),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.indigo,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+            ),
+            routerConfig: appRouter,
+          );
+        },
       ),
     );
   }

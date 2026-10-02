@@ -13,6 +13,10 @@ _BookModel _$BookModelFromJson(Map<String, dynamic> json) => _BookModel(
   year: (json['year'] as num?)?.toInt(),
   description: json['description'] as String?,
   thumbnailUrl: json['thumbnailUrl'] as String?,
+  isRead: json['isRead'] as bool? ?? false,
+  isLent: json['isLent'] as bool? ?? false,
+  borrowerName: json['borrowerName'] as String?,
+  rating: (json['rating'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$BookModelToJson(_BookModel instance) =>
@@ -23,4 +27,8 @@ Map<String, dynamic> _$BookModelToJson(_BookModel instance) =>
       'year': instance.year,
       'description': instance.description,
       'thumbnailUrl': instance.thumbnailUrl,
+      'isRead': instance.isRead,
+      'isLent': instance.isLent,
+      'borrowerName': instance.borrowerName,
+      'rating': instance.rating,
     };

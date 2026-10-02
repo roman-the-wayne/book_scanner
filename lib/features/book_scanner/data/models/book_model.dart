@@ -15,6 +15,10 @@ sealed class BookModel with _$BookModel {
     int? year,
     String? description,
     String? thumbnailUrl,
+    @Default(false) bool isRead,
+    @Default(false) bool isLent,
+    String? borrowerName,
+    int? rating,
   }) = _BookModel;
 
   // Генерируется json_serializable
@@ -30,6 +34,10 @@ sealed class BookModel with _$BookModel {
       year: year,
       description: description,
       thumbnailUrl: thumbnailUrl,
+      isRead: isRead,
+      isLent: isLent,
+      borrowerName: borrowerName,
+      rating: rating,
     );
   }
 
@@ -41,6 +49,10 @@ sealed class BookModel with _$BookModel {
       year: book.year,
       description: book.description,
       thumbnailUrl: book.thumbnailUrl,
+      isRead: book.isRead,
+      isLent: book.isLent,
+      borrowerName: book.borrowerName,
+      rating: book.rating,
     );
   }
 }

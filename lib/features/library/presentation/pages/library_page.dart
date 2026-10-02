@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/theme_cubit.dart';
 import '../../../book_scanner/domain/entities/book.dart';
 import '../bloc/library_bloc.dart';
 import '../bloc/library_event.dart';
@@ -7,7 +9,11 @@ import '../bloc/library_state.dart';
 import '../bloc/online_search_bloc/online_search_bloc.dart';
 import '../bloc/online_search_bloc/online_search_event.dart';
 import '../bloc/online_search_bloc/online_search_state.dart';
-import '../../../../core/di/injection_container.dart';
+import 'book_details_page.dart';
+
+enum FilterOption { all, read, unread, lent }
+
+enum SortOption { dateAdded, title, author, rating }
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -18,8 +24,24 @@ class LibraryPage extends StatelessWidget {
   }
 }
 
-class _LibraryView extends StatelessWidget {
+class _LibraryView extends StatefulWidget {
   const _LibraryView();
+
+  @override
+  State<_LibraryView> createState() => _LibraryViewState();
+}
+
+class _LibraryViewState extends State<_LibraryView> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  FilterOption _filterOption = FilterOption.all;
+  SortOption _sortOption = SortOption.dateAdded;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _showAddBookBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -32,297 +54,378 @@ class _LibraryView extends StatelessWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, Book book) {
-    final titleController = TextEditingController(text: book.title ?? '');
-    final authorController = TextEditingController(text: book.author ?? '');
-    final yearController =
-        TextEditingController(text: book.year?.toString() ?? '');
-    final descController = TextEditingController(text: book.description ?? '');
+  List<Book> _filterAndSortBooks(List<Book> books) {
+    // 1. Фильтрация по поисковому запросу
+    var filtered = books.where((book) {
+      if (_searchQuery.isEmpty) return true;
+      final title = book.title?.toLowerCase() ?? '';
+      final author = book.author?.toLowerCase() ?? '';
+      final query = _searchQuery.toLowerCase();
+      return title.contains(query) || author.contains(query);
+    }).toList();
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Редактировать книгу'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Название'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: authorController,
-                  decoration: const InputDecoration(labelText: 'Автор'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: yearController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Год издания'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descController,
-                  maxLines: 3,
-                  decoration:
-                      const InputDecoration(labelText: 'Описание / Заметки'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Отмена'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final updatedBook = book.copyWith(
-                  title: titleController.text.trim(),
-                  author: authorController.text.trim(),
-                  year: int.tryParse(yearController.text.trim()),
-                  description: descController.text.trim().isNotEmpty
-                      ? descController.text.trim()
-                      : null,
-                );
-                context.read<LibraryBloc>().add(UpdateBookEvent(updatedBook));
-                Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Книга обновлена')),
-                );
-              },
-              child: const Text('Сохранить'),
-            ),
-          ],
-        );
-      },
-    );
+    // 2. Фильтрация по статусам
+    if (_filterOption == FilterOption.read) {
+      filtered = filtered.where((b) => b.isRead).toList();
+    } else if (_filterOption == FilterOption.unread) {
+      filtered = filtered.where((b) => !b.isRead).toList();
+    } else if (_filterOption == FilterOption.lent) {
+      filtered = filtered.where((b) => b.isLent).toList();
+    }
+
+    // 3. Сортировка
+    filtered.sort((a, b) {
+      switch (_sortOption) {
+        case SortOption.title:
+          return (a.title ?? '').compareTo(b.title ?? '');
+        case SortOption.author:
+          return (a.author ?? '').compareTo(b.author ?? '');
+        case SortOption.rating:
+          return (b.rating ?? 0).compareTo(a.rating ?? 0);
+        case SortOption.dateAdded:
+          return 0; // По умолчанию сохраняется порядок из БД
+      }
+    });
+
+    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final themeMode = context.watch<ThemeCubit>().state;
+    final isDark = themeMode == ThemeMode.dark ||
+        (themeMode == ThemeMode.system &&
+            MediaQuery.of(context).platformBrightness == Brightness.dark);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Моя библиотека'),
+        actions: [
+          // Переключатель темы
+          IconButton(
+            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+            tooltip: 'Сменить тему',
+            onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+          ),
+          // Меню сортировки
+          PopupMenuButton<SortOption>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Сортировка',
+            onSelected: (sort) {
+              setState(() {
+                _sortOption = sort;
+              });
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: SortOption.dateAdded,
+                child: Text('По дате добавления'),
+              ),
+              PopupMenuItem(
+                value: SortOption.title,
+                child: Text('По названию (А-Я)'),
+              ),
+              PopupMenuItem(
+                value: SortOption.author,
+                child: Text('По автору (А-Я)'),
+              ),
+              PopupMenuItem(
+                value: SortOption.rating,
+                child: Text('По рейтингу (высокие выше)'),
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddBookBottomSheet(context),
         child: const Icon(Icons.add),
       ),
-      body: BlocBuilder<LibraryBloc, LibraryState>(
-        builder: (context, state) {
-          if (state is LibraryLoading || state is LibraryInitial) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is LibraryError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  state.message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
+      body: Column(
+        children: [
+          // Панель поиска и фильтров
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Поиск по вашей библиотеке...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            );
-          }
-          if (state is LibraryEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(
-                      Icons.auto_stories,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Ваша библиотека пуста. Отсканируйте книги во вкладке поиска или добавьте вручную.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          if (state is LibraryLoaded) {
-            final books = state.books;
-            if (books.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(
-                        Icons.auto_stories,
-                        size: 80,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Ваша библиотека пуста. Отсканируйте книги во вкладке поиска или добавьте вручную.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            return ListView.builder(
-              itemCount: books.length,
-              itemBuilder: (context, index) {
-                final book = books[index];
-                final bookId = book.id ?? book.title ?? index.toString();
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.trim();
+                });
+              },
+            ),
+          ),
 
-                return Dismissible(
-                  key: Key(bookId),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  confirmDismiss: (direction) async {
-                    return await showDialog(
-                      context: context,
-                      builder: (BuildContext dialogContext) {
-                        return AlertDialog(
-                          title: const Text('Удалить книгу'),
-                          content: const Text(
-                              'Вы уверены, что хотите удалить эту книгу из библиотеки?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(dialogContext).pop(false),
-                              child: const Text('Отмена'),
-                            ),
-                            FilledButton(
-                              onPressed: () =>
-                                  Navigator.of(dialogContext).pop(true),
-                              child: const Text('Удалить'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                  onDismissed: (direction) {
-                    if (book.id != null) {
-                      context
-                          .read<LibraryBloc>()
-                          .add(DeleteBookEvent(book.id!));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Книга удалена из библиотеки')),
-                      );
-                    }
-                  },
-                  child: ListTile(
-                    leading: book.thumbnailUrl != null &&
-                            book.thumbnailUrl!.isNotEmpty
-                        ? Image.network(
-                            book.thumbnailUrl!.replaceFirst('http:', 'https:'),
-                            width: 50,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.book, size: 50),
-                          )
-                        : const Icon(Icons.book, size: 50),
-                    title: Text(book.title ?? 'Без названия'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${book.author ?? 'Неизвестный автор'}${book.year != null ? ' • ${book.year}' : ''}',
-                        ),
-                        if (book.description != null &&
-                            book.description!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              book.description!,
-                              style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+          // Чипы фильтров
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('Все'),
+                  selected: _filterOption == FilterOption.all,
+                  onSelected: (_) =>
+                      setState(() => _filterOption = FilterOption.all),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Прочитано'),
+                  selected: _filterOption == FilterOption.read,
+                  onSelected: (_) =>
+                      setState(() => _filterOption = FilterOption.read),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Не прочитано'),
+                  selected: _filterOption == FilterOption.unread,
+                  onSelected: (_) =>
+                      setState(() => _filterOption = FilterOption.unread),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('В долгу'),
+                  selected: _filterOption == FilterOption.lent,
+                  onSelected: (_) =>
+                      setState(() => _filterOption = FilterOption.lent),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Список книг
+          Expanded(
+            child: BlocBuilder<LibraryBloc, LibraryState>(
+              builder: (context, state) {
+                if (state is LibraryLoading || state is LibraryInitial) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is LibraryError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        state.message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  );
+                }
+
+                final allBooks = state is LibraryLoaded
+                    ? state.books
+                    : <Book>[];
+
+                final displayBooks = _filterAndSortBooks(allBooks);
+
+                if (displayBooks.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.auto_stories,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            allBooks.isEmpty
+                                ? 'Ваша библиотека пуста. Отсканируйте книги во вкладке поиска или добавьте вручную.'
+                                : 'Книги по вашему запросу не найдены.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
-                    isThreeLine: book.description != null &&
-                        book.description!.isNotEmpty,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.indigo),
-                          onPressed: () => _showEditDialog(context, book),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: Colors.red),
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (BuildContext dialogContext) {
-                                return AlertDialog(
-                                  title: const Text('Удалить книгу'),
-                                  content: const Text(
-                                      'Вы уверены, что хотите удалить эту книгу из библиотеки?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(dialogContext).pop(false),
-                                      child: const Text('Отмена'),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () =>
-                                          Navigator.of(dialogContext).pop(true),
-                                      child: const Text('Удалить'),
-                                    ),
-                                  ],
-                                );
-                              },
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: displayBooks.length,
+                  itemBuilder: (context, index) {
+                    final book = displayBooks[index];
+                    final bookId = book.id ?? book.title ?? index.toString();
+
+                    return Dismissible(
+                      key: Key(bookId),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      confirmDismiss: (direction) async {
+                        return await showDialog(
+                          context: context,
+                          builder: (BuildContext dialogContext) {
+                            return AlertDialog(
+                              title: const Text('Удалить книгу'),
+                              content: const Text(
+                                  'Вы уверены, что хотите удалить эту книгу из библиотеки?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(false),
+                                  child: const Text('Отмена'),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(true),
+                                  child: const Text('Удалить'),
+                                ),
+                              ],
                             );
-                            if (confirm == true &&
-                                book.id != null &&
-                                context.mounted) {
-                              context
-                                  .read<LibraryBloc>()
-                                  .add(DeleteBookEvent(book.id!));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Книга удалена из библиотеки')),
-                              );
-                            }
                           },
+                        );
+                      },
+                      onDismissed: (direction) {
+                        if (book.id != null) {
+                          context
+                              .read<LibraryBloc>()
+                              .add(DeleteBookEvent(book.id!));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Книга удалена из библиотеки')),
+                          );
+                        }
+                      },
+                      child: ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: book.thumbnailUrl != null &&
+                                  book.thumbnailUrl!.isNotEmpty
+                              ? Image.network(
+                                  book.thumbnailUrl!
+                                      .replaceFirst('http:', 'https:'),
+                                  width: 45,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          Container(
+                                    width: 45,
+                                    height: 60,
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    child: const Icon(Icons.book),
+                                  ),
+                                )
+                              : Container(
+                                  width: 45,
+                                  height: 60,
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  child: const Icon(Icons.book),
+                                ),
                         ),
-                      ],
-                    ),
-                    onTap: () => _showEditDialog(context, book),
-                  ),
+                        // Адаптивная верстка длинных названий (Task 4)
+                        title: Text(
+                          book.title ?? 'Без названия',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${book.author ?? 'Неизвестный автор'}${book.year != null ? ' • ${book.year}' : ''}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            // Бейджи статусов и рейтингов
+                            Row(
+                              children: [
+                                if (book.rating != null && book.rating! > 0) ...[
+                                  const Icon(Icons.star,
+                                      size: 14, color: Colors.amber),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    '${book.rating}',
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (book.isRead)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'Прочитано',
+                                      style: TextStyle(
+                                          fontSize: 10, color: Colors.green),
+                                    ),
+                                  ),
+                                if (book.isLent) ...[
+                                  if (book.isRead) const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'В долгу (${book.borrowerName ?? '?'})',
+                                      style: const TextStyle(
+                                          fontSize: 10, color: Colors.orange),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          // Клик открывает детальную карточку книги (Task 2)
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => BookDetailsPage(book: book),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 );
               },
-            );
-          }
-
-          return const SizedBox.shrink();
-        },
+            ),
+          ),
+        ],
       ),
     );
   }

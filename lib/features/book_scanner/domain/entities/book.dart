@@ -7,6 +7,10 @@ class Book extends Equatable {
   final int? year;
   final String? description;
   final String? thumbnailUrl;
+  final bool isRead;
+  final bool isLent;
+  final String? borrowerName;
+  final int? rating;
 
   const Book({
     this.id,
@@ -15,6 +19,10 @@ class Book extends Equatable {
     this.year,
     this.description,
     this.thumbnailUrl,
+    this.isRead = false,
+    this.isLent = false,
+    this.borrowerName,
+    this.rating,
   });
 
   Book copyWith({
@@ -24,6 +32,10 @@ class Book extends Equatable {
     int? year,
     String? description,
     String? thumbnailUrl,
+    bool? isRead,
+    bool? isLent,
+    String? borrowerName,
+    int? rating,
   }) {
     return Book(
       id: id ?? this.id,
@@ -32,9 +44,24 @@ class Book extends Equatable {
       year: year ?? this.year,
       description: description ?? this.description,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      isRead: isRead ?? this.isRead,
+      isLent: isLent ?? this.isLent,
+      borrowerName: borrowerName ?? this.borrowerName,
+      rating: rating ?? this.rating,
     );
   }
 
   @override
-  List<Object?> get props => [id, title, author, year, description, thumbnailUrl];
+  List<Object?> get props => [
+        id,
+        title,
+        author,
+        year,
+        description,
+        thumbnailUrl,
+        isRead,
+        isLent,
+        borrowerName,
+        rating,
+      ];
 }
