@@ -8,8 +8,14 @@ part 'book_model.g.dart';
 sealed class BookModel with _$BookModel {
   const BookModel._(); // нужно, чтобы добавить свой метод toEntity()
 
-  const factory BookModel({String? title, String? author, int? year}) =
-      _BookModel;
+  const factory BookModel({
+    String? id,
+    String? title,
+    String? author,
+    int? year,
+    String? description,
+    String? thumbnailUrl,
+  }) = _BookModel;
 
   // Генерируется json_serializable
   factory BookModel.fromJson(Map<String, dynamic> json) =>
@@ -17,6 +23,24 @@ sealed class BookModel with _$BookModel {
 
   // Превращаем модель данных в доменную сущность
   Book toEntity() {
-    return Book(title: title, author: author, year: year);
+    return Book(
+      id: id,
+      title: title,
+      author: author,
+      year: year,
+      description: description,
+      thumbnailUrl: thumbnailUrl,
+    );
+  }
+
+  factory BookModel.fromEntity(Book book) {
+    return BookModel(
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      year: book.year,
+      description: book.description,
+      thumbnailUrl: book.thumbnailUrl,
+    );
   }
 }

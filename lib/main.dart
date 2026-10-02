@@ -1,7 +1,11 @@
-import 'package:book_scanner/features/book_scanner/presentation/pages/home_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/di/injection_container.dart' as di;
+import 'core/di/injection_container.dart';
+import 'core/navigation/app_router.dart';
+import 'features/library/presentation/bloc/library_bloc.dart';
+import 'features/library/presentation/bloc/library_event.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,14 +19,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Сканер книг',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
+    return BlocProvider<LibraryBloc>(
+      create: (_) => sl<LibraryBloc>()..add(LoadLibrary()),
+      child: MaterialApp.router(
+        title: 'Сканер книг',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+          useMaterial3: true,
+        ),
+        routerConfig: appRouter,
       ),
-      home: const HomePage(),
     );
   }
 }
