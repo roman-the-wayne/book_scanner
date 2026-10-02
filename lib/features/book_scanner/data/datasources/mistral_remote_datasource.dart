@@ -59,9 +59,18 @@ class MistralRemoteDataSource implements BookRemoteDataSource {
       return decoded
           .map((e) => BookModel.fromJson(e as Map<String, dynamic>))
           .toList();
+    } on SocketException {
+      throw const NetworkFailure(
+          'Отсутствует подключение к интернету. Проверьте соединение.');
     } on FormatException catch (e) {
       throw ServerFailure('Не удалось разобрать ответ модели: ${e.message}');
     } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('ClientException')) {
+        throw const NetworkFailure(
+            'Отсутствует подключение к интернету. Проверьте соединение.');
+      }
       throw ServerFailure('Ошибка распознавания: $e');
     }
   }

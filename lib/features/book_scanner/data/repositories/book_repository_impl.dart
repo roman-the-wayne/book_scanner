@@ -6,7 +6,7 @@ import '../../domain/repositories/book_repository.dart';
 import '../datasources/mistral_remote_datasource.dart';
 
 class BookRepositoryImpl implements BookRepository {
-  final BookRemoteDataSource remoteDataSource; // ← абстракция, не Mistral...
+  final BookRemoteDataSource remoteDataSource;
 
   BookRepositoryImpl(this.remoteDataSource);
 
@@ -15,10 +15,19 @@ class BookRepositoryImpl implements BookRepository {
     try {
       final result = await remoteDataSource.scanBooks(image);
       return Right(result.map((m) => m.toEntity()).toList());
+    } on NetworkFailure catch (e) {
+      return Left(NetworkFailure(e.message));
     } on ServerFailure catch (e) {
-      // ← Exception, не Failure
-      return Left(ServerFailure(e.message)); // конвертируем в Failure
+      return Left(ServerFailure(e.message));
+    } on SocketException {
+      return const Left(
+          NetworkFailure('Отсутствует подключение к интернету. Проверьте соединение.'));
     } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        return const Left(NetworkFailure(
+            'Отсутствует подключение к интернету. Проверьте соединение.'));
+      }
       return Left(ServerFailure('Неизвестная ошибка: $e'));
     }
   }
@@ -26,11 +35,10 @@ class BookRepositoryImpl implements BookRepository {
   @override
   Future<Either<Failure, void>> saveBook(Book book) async {
     throw UnimplementedError();
-    // TODO(реализуем, когда подключим Supabase)
   }
 
   @override
   Future<Either<Failure, List<Book>>> getBooks() async {
-    throw UnimplementedError(); // TODO
+    throw UnimplementedError();
   }
 }

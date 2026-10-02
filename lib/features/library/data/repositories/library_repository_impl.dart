@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../../../book_scanner/data/models/book_model.dart';
@@ -64,7 +65,15 @@ class LibraryRepositoryImpl implements LibraryRepository {
       final bookModels = await remoteDataSource.searchBooks(query);
       final books = bookModels.map((model) => model.toEntity()).toList();
       return Right(books);
+    } on SocketException catch (e) {
+      return Left(NetworkFailure(e.message));
     } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('TimeoutException')) {
+        return const Left(NetworkFailure(
+            'Отсутствует подключение к интернету. Проверьте соединение.'));
+      }
       return Left(ServerFailure(e.toString()));
     }
   }

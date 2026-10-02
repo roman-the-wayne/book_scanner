@@ -647,13 +647,35 @@ class _OnlineSearchTabState extends State<OnlineSearchTab> {
                 return const Center(child: CircularProgressIndicator());
               }
               if (searchState is OnlineSearchError) {
+                final isNetworkError =
+                    searchState.message.contains('интернет') ||
+                        searchState.message.contains('SocketException') ||
+                        searchState.message.contains('Failed host lookup');
+
                 return Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      'Ошибка: ${searchState.message}',
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isNetworkError ? Icons.wifi_off : Icons.error_outline,
+                          size: 60,
+                          color: Colors.orange,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          searchState.message,
+                          style: const TextStyle(fontSize: 15),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: _performSearch,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Повторить'),
+                        ),
+                      ],
                     ),
                   ),
                 );

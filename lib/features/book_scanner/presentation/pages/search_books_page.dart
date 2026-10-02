@@ -53,13 +53,34 @@ class _SearchBooksView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (scanState is BookScannerError) {
+            final isNetworkError = scanState.message.contains('интернет') ||
+                scanState.message.contains('SocketException') ||
+                scanState.message.contains('Failed host lookup');
+
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  scanState.message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isNetworkError ? Icons.wifi_off : Icons.error_outline,
+                      size: 60,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      scanState.message,
+                      style: const TextStyle(fontSize: 15),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => _pickImage(context),
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Выбрать фото заново'),
+                    ),
+                  ],
                 ),
               ),
             );
