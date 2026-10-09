@@ -31,8 +31,9 @@ class _SearchBooksView extends StatelessWidget {
   Future<void> _pickImage(BuildContext context) async {
     final picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
-      imageQuality: 90,
-      maxWidth: 1600,
+      imageQuality: 80,
+      maxWidth: 1024,
+      maxHeight: 1024,
     );
     if (picked == null) return;
     if (!context.mounted) return;

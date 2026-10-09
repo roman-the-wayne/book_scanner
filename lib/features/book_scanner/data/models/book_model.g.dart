@@ -17,6 +17,14 @@ _BookModel _$BookModelFromJson(Map<String, dynamic> json) => _BookModel(
   isLent: json['isLent'] as bool? ?? false,
   borrowerName: json['borrowerName'] as String?,
   rating: (json['rating'] as num?)?.toInt(),
+  genre: json['genre'] as String?,
+  publisher: json['publisher'] as String?,
+  city: json['city'] as String?,
+  pages: (json['pages'] as num?)?.toInt(),
+  isbn: json['isbn'] as String?,
+  udc: json['udc'] as String?,
+  bbk: json['bbk'] as String?,
+  isWishlist: json['isWishlist'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$BookModelToJson(_BookModel instance) =>
@@ -31,4 +39,12 @@ Map<String, dynamic> _$BookModelToJson(_BookModel instance) =>
       'isLent': instance.isLent,
       'borrowerName': instance.borrowerName,
       'rating': instance.rating,
+      'genre': instance.genre,
+      'publisher': instance.publisher,
+      'city': instance.city,
+      'pages': instance.pages,
+      'isbn': instance.isbn,
+      'udc': instance.udc,
+      'bbk': instance.bbk,
+      'isWishlist': instance.isWishlist,
     };

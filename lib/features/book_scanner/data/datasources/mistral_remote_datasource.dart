@@ -16,11 +16,12 @@ class MistralRemoteDataSource implements BookRemoteDataSource {
 
   MistralRemoteDataSource({required this.client});
 
-  static const _model =
-      'ministral-14b-latest'; // vision-capable, есть в free tier
+  // Официальная Vision-модель от Mistral AI
+  static const _model = 'pixtral-12b-2409';
+
   static const _prompt = '''
 Ты — сканер книг. На фото книги. Язык книг — русский.
-Прочитай текст НА КОРЕШКАХ. Если на фото не видно дату или автора, или если ты не уверен в увиденных тобой данных, смело ставь null
+Прочитай текст НА КОРЕШКАХ или обложках. Если на фото не видно дату или автора, ставь null.
 Верни СТРОГО JSON-массив без markdown и лишнего текста - это ОЧЕНЬ ВАЖНО для парсинга:
 [{"title": string, "author": string|null, "year": number|null}]
 Если книг нет — [].
@@ -34,7 +35,7 @@ class MistralRemoteDataSource implements BookRemoteDataSource {
       final mime = _mimeFromPath(image.path);
       final dataUrl = 'data:$mime;base64,${base64Encode(bytes)}';
 
-      // 2. Запрос с текстом + картинкой
+      // 2. Запрос с текстом + картинкой к мультимодальной модели Pixtral
       final response = await client.chat.create(
         request: ChatCompletionRequest(
           model: _model,
@@ -65,12 +66,16 @@ class MistralRemoteDataSource implements BookRemoteDataSource {
     } on FormatException catch (e) {
       throw ServerFailure('Не удалось разобрать ответ модели: ${e.message}');
     } catch (e) {
-      if (e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup') ||
-          e.toString().contains('ClientException')) {
+      final errStr = e.toString();
+      // Выбрасываем NetworkFailure ТОЛЬКО при реальном отсутствии интернет-соединения/DNS
+      if (errStr.contains('SocketException') ||
+          errStr.contains('Failed host lookup') ||
+          errStr.contains('No address associated with hostname')) {
         throw const NetworkFailure(
             'Отсутствует подключение к интернету. Проверьте соединение.');
       }
+      // Во всех остальных случаях (ошибки API, лимиты, неверный токен) показываем точный ответ сервера
+      debugPrint('Mistral scan error: $errStr');
       throw ServerFailure('Ошибка распознавания: $e');
     }
   }

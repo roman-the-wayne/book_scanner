@@ -6,7 +6,7 @@ part 'book_model.g.dart';
 
 @freezed
 sealed class BookModel with _$BookModel {
-  const BookModel._(); // нужно, чтобы добавить свой метод toEntity()
+  const BookModel._();
 
   const factory BookModel({
     String? id,
@@ -19,13 +19,19 @@ sealed class BookModel with _$BookModel {
     @Default(false) bool isLent,
     String? borrowerName,
     int? rating,
+    String? genre,
+    String? publisher,
+    String? city,
+    int? pages,
+    String? isbn,
+    String? udc,
+    String? bbk,
+    @Default(false) bool isWishlist,
   }) = _BookModel;
 
-  // Генерируется json_serializable
   factory BookModel.fromJson(Map<String, dynamic> json) =>
       _$BookModelFromJson(json);
 
-  // Превращаем модель данных в доменную сущность
   Book toEntity() {
     return Book(
       id: id,
@@ -38,6 +44,14 @@ sealed class BookModel with _$BookModel {
       isLent: isLent,
       borrowerName: borrowerName,
       rating: rating,
+      genre: genre,
+      publisher: publisher,
+      city: city,
+      pages: pages,
+      isbn: isbn,
+      udc: udc,
+      bbk: bbk,
+      isWishlist: isWishlist,
     );
   }
 
@@ -53,6 +67,14 @@ sealed class BookModel with _$BookModel {
       isLent: book.isLent,
       borrowerName: book.borrowerName,
       rating: book.rating,
+      genre: book.genre,
+      publisher: book.publisher,
+      city: book.city,
+      pages: book.pages,
+      isbn: book.isbn,
+      udc: book.udc,
+      bbk: book.bbk,
+      isWishlist: book.isWishlist,
     );
   }
 }

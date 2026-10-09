@@ -11,6 +11,14 @@ class Book extends Equatable {
   final bool isLent;
   final String? borrowerName;
   final int? rating;
+  final String? genre;
+  final String? publisher;
+  final String? city;
+  final int? pages;
+  final String? isbn;
+  final String? udc;
+  final String? bbk;
+  final bool isWishlist;
 
   const Book({
     this.id,
@@ -23,6 +31,14 @@ class Book extends Equatable {
     this.isLent = false,
     this.borrowerName,
     this.rating,
+    this.genre,
+    this.publisher,
+    this.city,
+    this.pages,
+    this.isbn,
+    this.udc,
+    this.bbk,
+    this.isWishlist = false,
   });
 
   Book copyWith({
@@ -36,6 +52,14 @@ class Book extends Equatable {
     bool? isLent,
     String? borrowerName,
     int? rating,
+    String? genre,
+    String? publisher,
+    String? city,
+    int? pages,
+    String? isbn,
+    String? udc,
+    String? bbk,
+    bool? isWishlist,
   }) {
     return Book(
       id: id ?? this.id,
@@ -48,6 +72,14 @@ class Book extends Equatable {
       isLent: isLent ?? this.isLent,
       borrowerName: borrowerName ?? this.borrowerName,
       rating: rating ?? this.rating,
+      genre: genre ?? this.genre,
+      publisher: publisher ?? this.publisher,
+      city: city ?? this.city,
+      pages: pages ?? this.pages,
+      isbn: isbn ?? this.isbn,
+      udc: udc ?? this.udc,
+      bbk: bbk ?? this.bbk,
+      isWishlist: isWishlist ?? this.isWishlist,
     );
   }
 
@@ -63,5 +95,13 @@ class Book extends Equatable {
         isLent,
         borrowerName,
         rating,
+        genre,
+        publisher,
+        city,
+        pages,
+        isbn,
+        udc,
+        bbk,
+        isWishlist,
       ];
 }
