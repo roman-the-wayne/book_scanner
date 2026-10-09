@@ -20,11 +20,24 @@ class MistralRemoteDataSource implements BookRemoteDataSource {
   static const _model = 'pixtral-12b-2409';
 
   static const _prompt = '''
-Ты — сканер книг. На фото книги. Язык книг — русский.
-Прочитай текст НА КОРЕШКАХ или обложках. Если на фото не видно дату или автора, ставь null.
-Верни СТРОГО JSON-массив без markdown и лишнего текста - это ОЧЕНЬ ВАЖНО для парсинга:
-[{"title": string, "author": string|null, "year": number|null}]
-Если книг нет — [].
+Ты — сканер книг. На фото книга (корешок, обложка или титульная страница). Язык книг — преимущественно русский.
+Внимательно прочитай текст и извлеки метаданные. Если какой-то параметр не виден на фото или ты не уверен, ставь null.
+
+Верни СТРОГО JSON-массив объектов без markdown-оформления и без лишнего текста:
+[{
+  "title": string,
+  "author": string|null,
+  "year": number|null,
+  "genre": string|null,
+  "publisher": string|null,
+  "city": string|null,
+  "pages": number|null,
+  "isbn": string|null,
+  "udc": string|null,
+  "bbk": string|null
+}]
+
+Если книг на фото нет — верни [].
 ''';
 
   @override
@@ -67,14 +80,12 @@ class MistralRemoteDataSource implements BookRemoteDataSource {
       throw ServerFailure('Не удалось разобрать ответ модели: ${e.message}');
     } catch (e) {
       final errStr = e.toString();
-      // Выбрасываем NetworkFailure ТОЛЬКО при реальном отсутствии интернет-соединения/DNS
       if (errStr.contains('SocketException') ||
           errStr.contains('Failed host lookup') ||
           errStr.contains('No address associated with hostname')) {
         throw const NetworkFailure(
             'Отсутствует подключение к интернету. Проверьте соединение.');
       }
-      // Во всех остальных случаях (ошибки API, лимиты, неверный токен) показываем точный ответ сервера
       debugPrint('Mistral scan error: $errStr');
       throw ServerFailure('Ошибка распознавания: $e');
     }
