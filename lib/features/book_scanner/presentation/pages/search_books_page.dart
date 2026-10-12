@@ -10,6 +10,7 @@ import 'package:book_scanner/features/library/presentation/bloc/library_state.da
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../../core/di/injection_container.dart';
 
@@ -53,13 +54,21 @@ class _SearchBooksView extends StatelessWidget {
       body: BlocBuilder<BookScannerBloc, BookScannerState>(
         builder: (context, scanState) {
           if (scanState is BookScannerLoading) {
-            return const Center(
+            String statusText = 'Распознаем фото...';
+            if (scanState.totalBooks > 0) {
+              statusText = 'Сбор данных из сети:\n${scanState.enrichedCount} из ${scanState.totalBooks}';
+            }
+            
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Распознаем и обогащаем данные с фото...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    statusText,
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             );
@@ -148,12 +157,18 @@ class _SearchBooksView extends StatelessWidget {
                       leading: ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: hasThumbnail
-                            ? Image.network(
-                                book.thumbnailUrl!.replaceFirst('http:', 'https:'),
+                            ? CachedNetworkImage(
+                                imageUrl: book.thumbnailUrl!.replaceFirst('http:', 'https:'),
                                 width: 48,
                                 height: 72,
                                 fit: BoxFit.cover,
-                                errorBuilder: (ctx, err, stack) => Container(
+                                placeholder: (context, url) => Container(
+                                  width: 48,
+                                  height: 72,
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                ),
+                                errorWidget: (context, url, error) => Container(
                                   width: 48,
                                   height: 72,
                                   color: theme.colorScheme.surfaceContainerHighest,

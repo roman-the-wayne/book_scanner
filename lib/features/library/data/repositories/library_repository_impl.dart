@@ -68,11 +68,8 @@ class LibraryRepositoryImpl implements LibraryRepository {
     } on SocketException catch (e) {
       return Left(NetworkFailure(e.message));
     } catch (e) {
-      if (e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup') ||
-          e.toString().contains('TimeoutException')) {
-        return const Left(NetworkFailure(
-            'Отсутствует подключение к интернету. Проверьте соединение.'));
+      if (e is SocketException) {
+        return const Left(NetworkFailure('Отсутствует подключение к интернету. Проверьте соединение.'));
       }
       return Left(ServerFailure(e.toString()));
     }
@@ -87,11 +84,8 @@ class LibraryRepositoryImpl implements LibraryRepository {
     } on SocketException catch (e) {
       return Left(NetworkFailure(e.message));
     } catch (e) {
-      if (e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup') ||
-          e.toString().contains('TimeoutException')) {
-        return const Left(NetworkFailure(
-            'Отсутствует подключение к интернету. Проверьте соединение.'));
+      if (e is SocketException) {
+        return const Left(NetworkFailure('Отсутствует подключение к интернету. Проверьте соединение.'));
       }
       return Left(ServerFailure(e.toString()));
     }

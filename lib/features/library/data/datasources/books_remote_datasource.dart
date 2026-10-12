@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../../../book_scanner/data/models/book_model.dart';
 
 abstract class BooksRemoteDataSource {
@@ -11,9 +10,9 @@ abstract class BooksRemoteDataSource {
 }
 
 class BooksRemoteDataSourceImpl implements BooksRemoteDataSource {
-  final http.Client client;
+  final Dio dio;
 
-  BooksRemoteDataSourceImpl({required this.client});
+  BooksRemoteDataSourceImpl({required this.dio});
 
   @override
   Future<List<BookModel>> searchBooks(String query) async {
@@ -21,17 +20,17 @@ class BooksRemoteDataSourceImpl implements BooksRemoteDataSource {
       final googleResults = await _searchGoogleBooks(query);
       if (googleResults.isNotEmpty) return googleResults;
       return await _searchOpenLibrary(query);
-    } on SocketException {
-      throw const SocketException(
-          'Отсутствует подключение к интернету. Проверьте соединение.');
-    } on http.ClientException catch (e) {
-      if (e.message.contains('Failed host lookup') ||
-          e.message.contains('SocketException')) {
-        throw const SocketException(
-            'Отсутствует подключение к интернету. Проверьте соединение.');
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.error is SocketException) {
+        throw const SocketException('Отсутствует подключение к интернету. Проверьте соединение.');
       }
-      debugPrint('Google Books ClientException ($e). Falling back to OpenLibrary...');
+      debugPrint('DioException in Google Books ($e). Falling back to OpenLibrary...');
       return await _searchOpenLibrary(query);
+    } on SocketException {
+      throw const SocketException('Отсутствует подключение к интернету. Проверьте соединение.');
     } catch (e) {
       debugPrint('Google Books failed ($e). Falling back to OpenLibrary...');
       return await _searchOpenLibrary(query);
@@ -71,8 +70,7 @@ class BooksRemoteDataSourceImpl implements BooksRemoteDataSource {
     }
 
     // 3. Резервный свободный поиск
-    if (results.isEmpty &&
-        ((title != null && title.isNotEmpty) || (author != null && author.isNotEmpty))) {
+    if (results.isEmpty && ((title != null && title.isNotEmpty) || (author != null && author.isNotEmpty))) {
       try {
         final query = '${title ?? ''} ${author ?? ''}'.trim();
         results = await searchBooks(query);
@@ -87,39 +85,21 @@ class BooksRemoteDataSourceImpl implements BooksRemoteDataSource {
 
     // Выбираем результат с обложкой и описанием, если таковой имеется
     final match = results.firstWhere(
-      (b) =>
-          (b.thumbnailUrl != null && b.thumbnailUrl!.isNotEmpty) ||
-          (b.description != null && b.description!.isNotEmpty),
+      (b) => (b.thumbnailUrl != null && b.thumbnailUrl!.isNotEmpty) || (b.description != null && b.description!.isNotEmpty),
       orElse: () => results.first,
     );
 
     final enriched = book.copyWith(
-      title: (book.title == null || book.title!.isEmpty)
-          ? match.title
-          : book.title,
-      author: (book.author == null || book.author!.isEmpty)
-          ? match.author
-          : book.author,
+      title: (book.title == null || book.title!.isEmpty) ? match.title : book.title,
+      author: (book.author == null || book.author!.isEmpty) ? match.author : book.author,
       year: book.year ?? match.year,
-      description: (book.description == null || book.description!.isEmpty)
-          ? match.description
-          : book.description,
-      thumbnailUrl: (book.thumbnailUrl == null || book.thumbnailUrl!.isEmpty)
-          ? match.thumbnailUrl
-          : book.thumbnailUrl,
-      genre: (book.genre == null || book.genre!.isEmpty)
-          ? match.genre
-          : book.genre,
-      publisher: (book.publisher == null || book.publisher!.isEmpty)
-          ? match.publisher
-          : book.publisher,
-      city: (book.city == null || book.city!.isEmpty)
-          ? match.city
-          : book.city,
+      description: (book.description == null || book.description!.isEmpty) ? match.description : book.description,
+      thumbnailUrl: (book.thumbnailUrl == null || book.thumbnailUrl!.isEmpty) ? match.thumbnailUrl : book.thumbnailUrl,
+      genre: (book.genre == null || book.genre!.isEmpty) ? match.genre : book.genre,
+      publisher: (book.publisher == null || book.publisher!.isEmpty) ? match.publisher : book.publisher,
+      city: (book.city == null || book.city!.isEmpty) ? match.city : book.city,
       pages: book.pages ?? match.pages,
-      isbn: (book.isbn == null || book.isbn!.isEmpty)
-          ? match.isbn
-          : book.isbn,
+      isbn: (book.isbn == null || book.isbn!.isEmpty) ? match.isbn : book.isbn,
       udc: (book.udc == null || book.udc!.isEmpty) ? match.udc : book.udc,
       bbk: (book.bbk == null || book.bbk!.isEmpty) ? match.bbk : book.bbk,
     );
@@ -132,25 +112,25 @@ class BooksRemoteDataSourceImpl implements BooksRemoteDataSource {
   }
 
   Future<List<BookModel>> _searchGoogleBooks(String query) async {
-    final uri = Uri.https('www.googleapis.com', '/books/v1/volumes', {
-      'q': query,
-      'maxResults': '10',
-    });
-    debugPrint('BooksRemoteDataSource: Requesting Google Books: $uri');
+    final uri = 'https://www.googleapis.com/books/v1/volumes';
+    debugPrint('BooksRemoteDataSource: Requesting Google Books for: $query');
 
-    final response = await client.get(
+    final response = await dio.get<Map<String, dynamic>>(
       uri,
-      headers: {
-        'User-Agent': 'BookScannerApp/1.0',
-        'Accept': 'application/json',
+      queryParameters: {
+        'q': query,
+        'maxResults': 10,
       },
-    ).timeout(const Duration(seconds: 8));
+      options: Options(
+        headers: {
+          'User-Agent': 'BookScannerApp/1.0',
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
-    debugPrint('Google Books response status: ${response.statusCode}');
-
-    if (response.statusCode == 200) {
-      final String decodedBody = utf8.decode(response.bodyBytes);
-      final Map<String, dynamic> data = json.decode(decodedBody);
+    if (response.statusCode == 200 && response.data != null) {
+      final data = response.data!;
       final items = data['items'] as List<dynamic>? ?? [];
 
       final List<BookModel> parsedBooks = [];
@@ -251,25 +231,25 @@ class BooksRemoteDataSourceImpl implements BooksRemoteDataSource {
   }
 
   Future<List<BookModel>> _searchOpenLibrary(String query) async {
-    final uri = Uri.https('openlibrary.org', '/search.json', {
-      'q': query,
-      'limit': '10',
-    });
-    debugPrint('BooksRemoteDataSource: Requesting OpenLibrary: $uri');
+    final uri = 'https://openlibrary.org/search.json';
+    debugPrint('BooksRemoteDataSource: Requesting OpenLibrary for: $query');
 
-    final response = await client.get(
+    final response = await dio.get<Map<String, dynamic>>(
       uri,
-      headers: {
-        'User-Agent': 'BookScannerApp/1.0',
-        'Accept': 'application/json',
+      queryParameters: {
+        'q': query,
+        'limit': 10,
       },
-    ).timeout(const Duration(seconds: 8));
+      options: Options(
+        headers: {
+          'User-Agent': 'BookScannerApp/1.0',
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
-    debugPrint('OpenLibrary response status: ${response.statusCode}');
-
-    if (response.statusCode == 200) {
-      final String decodedBody = utf8.decode(response.bodyBytes);
-      final Map<String, dynamic> data = json.decode(decodedBody);
+    if (response.statusCode == 200 && response.data != null) {
+      final data = response.data!;
       final docs = data['docs'] as List<dynamic>? ?? [];
 
       final List<BookModel> parsedBooks = [];

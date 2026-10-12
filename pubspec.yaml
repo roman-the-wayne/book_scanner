@@ -48,6 +48,7 @@ dependencies:
   mistralai_dart: ^5.0.0
   http: ^1.6.0
   shared_preferences: ^2.3.2
+  cached_network_image: ^4.0.4
 dev_dependencies:
   flutter_test:
     sdk: flutter

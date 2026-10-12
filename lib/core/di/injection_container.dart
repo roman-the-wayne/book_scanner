@@ -2,7 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:mistralai_dart/mistralai_dart.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../../features/book_scanner/data/datasources/mistral_remote_datasource.dart';
 import '../../features/book_scanner/data/repositories/book_repository_impl.dart';
@@ -29,10 +29,20 @@ final sl = GetIt.instance; // sl = service locator
 Future<void> init() async {
   // ─── External / API client & Local Storage ───
   sl.registerLazySingleton<MistralClient>(
-    () => MistralClient.withApiKey(dotenv.env['MISTRAL_API_KEY']!),
+    () => MistralClient.withApiKey(dotenv.env['MISTRAL_API_KEY'] ?? ''),
   );
 
-  sl.registerLazySingleton(() => http.Client());
+  sl.registerLazySingleton<Dio>(
+    () {
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        sendTimeout: const Duration(seconds: 10),
+      ));
+      dio.interceptors.add(LogInterceptor(responseBody: false, requestBody: false));
+      return dio;
+    },
+  );
 
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
@@ -45,7 +55,7 @@ Future<void> init() async {
     () => LibraryLocalDataSourceImpl(sharedPreferences: sl()),
   );
   sl.registerLazySingleton<BooksRemoteDataSource>(
-    () => BooksRemoteDataSourceImpl(client: sl()),
+    () => BooksRemoteDataSourceImpl(dio: sl()),
   );
 
   // ─── Repositories ───────────────────────────

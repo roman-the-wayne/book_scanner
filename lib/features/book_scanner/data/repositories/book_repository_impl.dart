@@ -20,25 +20,9 @@ class BookRepositoryImpl implements BookRepository {
     } on ServerFailure catch (e) {
       return Left(ServerFailure(e.message));
     } on SocketException {
-      return const Left(
-          NetworkFailure('Отсутствует подключение к интернету. Проверьте соединение.'));
+      return const Left(NetworkFailure('Отсутствует подключение к интернету. Проверьте соединение.'));
     } catch (e) {
-      if (e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup')) {
-        return const Left(NetworkFailure(
-            'Отсутствует подключение к интернету. Проверьте соединение.'));
-      }
       return Left(ServerFailure('Неизвестная ошибка: $e'));
     }
-  }
-
-  @override
-  Future<Either<Failure, void>> saveBook(Book book) async {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<Either<Failure, List<Book>>> getBooks() async {
-    throw UnimplementedError();
   }
 }

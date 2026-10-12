@@ -1,6 +1,20 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../book_scanner/data/models/book_model.dart';
+
+// Выносим тяжелые операции парсинга в top-level функции для запуска в изолятах
+List<BookModel> _decodeBooksInBackground(String jsonString) {
+  final List<dynamic> jsonList = json.decode(jsonString);
+  return jsonList
+      .map((jsonItem) => BookModel.fromJson(jsonItem as Map<String, dynamic>))
+      .toList();
+}
+
+String _encodeBooksInBackground(List<BookModel> books) {
+  final jsonList = books.map((b) => b.toJson()).toList();
+  return json.encode(jsonList);
+}
 
 abstract class LibraryLocalDataSource {
   Future<List<BookModel>> getBooks();
@@ -18,22 +32,19 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
   @override
   Future<List<BookModel>> getBooks() async {
     final jsonString = sharedPreferences.getString(cachedBooksKey);
-    if (jsonString == null) {
+    if (jsonString == null || jsonString.isEmpty) {
       return [];
     }
-    final List<dynamic> jsonList = json.decode(jsonString);
-    return jsonList
-        .map((jsonItem) => BookModel.fromJson(jsonItem as Map<String, dynamic>))
-        .toList();
+    // Выполняем десериализацию в фоновом потоке, чтобы не морозить UI (ListView)
+    return await compute(_decodeBooksInBackground, jsonString);
   }
 
   @override
   Future<void> saveBook(BookModel book) async {
     final books = await getBooks();
-    final bookToSave = book.id == null || book.id!.isEmpty
-        ? book.copyWith(id: DateTime.now().millisecondsSinceEpoch.toString())
-        : book;
-    books.add(bookToSave);
+    // ID должен генерироваться в Domain слое, а не здесь. 
+    // Data layer отвечает только за хранение.
+    books.add(book);
     await _saveBooksList(books);
   }
 
@@ -57,7 +68,8 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
   }
 
   Future<void> _saveBooksList(List<BookModel> books) async {
-    final jsonList = books.map((b) => b.toJson()).toList();
-    await sharedPreferences.setString(cachedBooksKey, json.encode(jsonList));
+    // Выполняем сериализацию в фоновом потоке
+    final jsonString = await compute(_encodeBooksInBackground, books);
+    await sharedPreferences.setString(cachedBooksKey, jsonString);
   }
 }

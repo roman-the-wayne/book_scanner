@@ -11,6 +11,12 @@ class SaveBook implements UseCase<void, Book> {
 
   @override
   Future<Either<Failure, void>> call(Book book) async {
-    return repository.saveBook(book);
+    // Генерация бизнес-идентификатора происходит в Domain слое,
+    // если книга создана локально и еще не имеет ID.
+    final bookToSave = (book.id == null || book.id!.isEmpty)
+        ? book.copyWith(id: DateTime.now().millisecondsSinceEpoch.toString())
+        : book;
+
+    return repository.saveBook(bookToSave);
   }
 }

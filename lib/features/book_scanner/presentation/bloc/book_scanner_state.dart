@@ -9,7 +9,18 @@ abstract class BookScannerState extends Equatable {
 
 class BookScannerInitial extends BookScannerState {}
 
-class BookScannerLoading extends BookScannerState {}
+class BookScannerLoading extends BookScannerState {
+  final int totalBooks;
+  final int enrichedCount;
+
+  const BookScannerLoading({
+    this.totalBooks = 0,
+    this.enrichedCount = 0,
+  });
+
+  @override
+  List<Object?> get props => [totalBooks, enrichedCount];
+}
 
 class BookScannerLoaded extends BookScannerState {
   final List<Book> books;

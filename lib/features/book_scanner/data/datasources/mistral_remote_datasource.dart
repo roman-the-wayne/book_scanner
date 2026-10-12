@@ -79,14 +79,10 @@ class MistralRemoteDataSource implements BookRemoteDataSource {
     } on FormatException catch (e) {
       throw ServerFailure('Не удалось разобрать ответ модели: ${e.message}');
     } catch (e) {
-      final errStr = e.toString();
-      if (errStr.contains('SocketException') ||
-          errStr.contains('Failed host lookup') ||
-          errStr.contains('No address associated with hostname')) {
-        throw const NetworkFailure(
-            'Отсутствует подключение к интернету. Проверьте соединение.');
+      if (e is SocketException) {
+         throw const NetworkFailure('Отсутствует подключение к интернету. Проверьте соединение.');
       }
-      debugPrint('Mistral scan error: $errStr');
+      debugPrint('Mistral scan error: $e');
       throw ServerFailure('Ошибка распознавания: $e');
     }
   }
