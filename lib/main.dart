@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/di/injection_container.dart';
 import 'core/navigation/app_router.dart';
+import 'core/theme/app_theme.dart';
 import 'core/theme/theme_cubit.dart';
 import 'features/library/presentation/bloc/library_bloc.dart';
 import 'features/library/presentation/bloc/library_event.dart';
@@ -33,20 +34,8 @@ class MyApp extends StatelessWidget {
             title: 'Сканер книг',
             debugShowCheckedModeBanner: false,
             themeMode: themeMode,
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.indigo,
-                brightness: Brightness.light,
-              ),
-              useMaterial3: true,
-            ),
-            darkTheme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.indigo,
-                brightness: Brightness.dark,
-              ),
-              useMaterial3: true,
-            ),
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
             routerConfig: appRouter,
           );
         },

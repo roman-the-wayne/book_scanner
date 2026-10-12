@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/theme_cubit.dart';
 import '../../../book_scanner/domain/entities/book.dart';
@@ -311,22 +310,25 @@ class _LibraryViewState extends State<_LibraryView> {
                           },
                           child: ListTile(
                             leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(3),
                               child: book.thumbnailUrl != null &&
                                       book.thumbnailUrl!.isNotEmpty
-                                  ? CachedNetworkImage(
-                                      imageUrl: book.thumbnailUrl!
+                                  ? Image.network(
+                                      book.thumbnailUrl!
                                           .replaceFirst('http:', 'https:'),
                                       width: 45,
                                       height: 60,
                                       fit: BoxFit.cover,
-                                      placeholder: (context, url) => Container(
-                                        width: 45,
-                                        height: 60,
-                                        color: theme.colorScheme.surfaceContainerHighest,
-                                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                      ),
-                                      errorWidget: (context, url, error) => Container(
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return Container(
+                                          width: 45,
+                                          height: 60,
+                                          color: theme.colorScheme.surfaceContainerHighest,
+                                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) => Container(
                                         width: 45,
                                         height: 60,
                                         color: theme.colorScheme.surfaceContainerHighest,
@@ -701,18 +703,34 @@ class _OnlineSearchTabState extends State<OnlineSearchTab> {
                         );
 
                         return ListTile(
-                          leading: book.thumbnailUrl != null && book.thumbnailUrl!.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: book.thumbnailUrl!.replaceFirst('http:', 'https:'),
-                                  width: 50,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => const SizedBox(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: book.thumbnailUrl != null && book.thumbnailUrl!.isNotEmpty
+                                ? Image.network(
+                                    book.thumbnailUrl!.replaceFirst('http:', 'https:'),
                                     width: 50,
-                                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                    height: 75,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const SizedBox(
+                                        width: 50,
+                                        height: 75,
+                                        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) => const SizedBox(
+                                      width: 50,
+                                      height: 75,
+                                      child: Icon(Icons.book, size: 50),
+                                    ),
+                                  )
+                                : const SizedBox(
+                                    width: 50,
+                                    height: 75,
+                                    child: Icon(Icons.book, size: 50),
                                   ),
-                                  errorWidget: (context, url, error) => const Icon(Icons.book, size: 50),
-                                )
-                              : const Icon(Icons.book, size: 50),
+                          ),
                           title: Text(
                             book.title ?? 'Без названия',
                             maxLines: 2,

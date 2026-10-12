@@ -10,7 +10,6 @@ import 'package:book_scanner/features/library/presentation/bloc/library_state.da
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../../core/di/injection_container.dart';
 
@@ -155,20 +154,23 @@ class _SearchBooksView extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                         child: hasThumbnail
-                            ? CachedNetworkImage(
-                                imageUrl: book.thumbnailUrl!.replaceFirst('http:', 'https:'),
+                            ? Image.network(
+                                book.thumbnailUrl!.replaceFirst('http:', 'https:'),
                                 width: 48,
                                 height: 72,
                                 fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  width: 48,
-                                  height: 72,
-                                  color: theme.colorScheme.surfaceContainerHighest,
-                                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                ),
-                                errorWidget: (context, url, error) => Container(
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: 48,
+                                    height: 72,
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) => Container(
                                   width: 48,
                                   height: 72,
                                   color: theme.colorScheme.surfaceContainerHighest,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../book_scanner/domain/entities/book.dart';
 import '../bloc/library_bloc.dart';
 import '../bloc/library_event.dart';
@@ -316,18 +315,21 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                 borderRadius: BorderRadius.circular(12),
                 child: _currentBook.thumbnailUrl != null &&
                         _currentBook.thumbnailUrl!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: _currentBook.thumbnailUrl!
+                    ? Image.network(
+                        _currentBook.thumbnailUrl!
                             .replaceFirst('http:', 'https:'),
                         height: 220,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 180,
-                          width: 130,
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          child: const Center(child: CircularProgressIndicator()),
-                        ),
-                        errorWidget: (context, url, error) => Container(
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 180,
+                            width: 130,
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Center(child: CircularProgressIndicator()),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Container(
                           height: 180,
                           width: 130,
                           color: theme.colorScheme.surfaceContainerHighest,
