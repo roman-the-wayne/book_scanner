@@ -33,31 +33,44 @@ class BookScannerBloc extends Bloc<BookScannerEvent, BookScannerState> {
 
         emit(BookScannerLoading(totalBooks: scannedBooks.length, enrichedCount: 0));
 
-        final List<Book> enrichedBooks = [];
-        
-        // Обогащаем книги последовательно, а не через Future.wait, 
-        // чтобы избежать Rate Limit от внешних API и таймаутов.
-        for (int i = 0; i < scannedBooks.length; i++) {
-          final book = scannedBooks[i];
+        // Ограничиваем параллелизм (по 3 запроса за раз), чтобы не словить Rate Limit, 
+        // но при этом не ждать каждую книгу по цепочке.
+        const maxConcurrency = 3;
+        final List<Book> enrichedBooks = List<Book>.from(scannedBooks);
+        int completedCount = 0;
+
+        // Функция для обработки одного куска (worker)
+        Future<void> processBook(int index) async {
+          final book = scannedBooks[index];
           final enrichResult = await enrichBook(book);
           
           final finalBook = enrichResult.fold(
-            (_) => book, // При ошибке оставляем исходную книгу (без обогащения)
+            (_) => book, // При ошибке оставляем исходную книгу
             (enriched) => enriched,
           );
           
-          enrichedBooks.add(finalBook);
+          enrichedBooks[index] = finalBook;
+        }
+
+        // Запускаем воркеры батчами по `maxConcurrency`
+        for (int i = 0; i < scannedBooks.length; i += maxConcurrency) {
+          final end = (i + maxConcurrency < scannedBooks.length) ? i + maxConcurrency : scannedBooks.length;
+          final batch = <Future<void>>[];
           
-          // Обновляем прогресс обогащения
+          for (int j = i; j < end; j++) {
+            batch.add(processBook(j));
+          }
+          
+          // Ждем завершения текущей пачки
+          await Future.wait(batch);
+          
+          completedCount += batch.length;
+          
+          // Обновляем UI с прогрессом
           emit(BookScannerLoading(
             totalBooks: scannedBooks.length, 
-            enrichedCount: i + 1
+            enrichedCount: completedCount
           ));
-          
-          // Небольшая задержка между запросами для лояльности к публичным API (Google Books / OpenLibrary)
-          if (i < scannedBooks.length - 1) {
-            await Future.delayed(const Duration(milliseconds: 300));
-          }
         }
 
         emit(BookScannerLoaded(enrichedBooks));
