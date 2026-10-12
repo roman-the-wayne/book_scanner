@@ -8,4 +8,5 @@ abstract class LibraryRepository {
   Future<Either<Failure, void>> updateBook(Book book);
   Future<Either<Failure, void>> deleteBook(String id);
   Future<Either<Failure, List<Book>>> searchBooksOnline(String query);
+  Future<Either<Failure, Book>> enrichBook(Book book);
 }

@@ -36,3 +36,12 @@ class DeleteBookEvent extends LibraryEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class EnrichBookEvent extends LibraryEvent {
+  final Book book;
+
+  const EnrichBookEvent(this.book);
+
+  @override
+  List<Object?> get props => [book];
+}

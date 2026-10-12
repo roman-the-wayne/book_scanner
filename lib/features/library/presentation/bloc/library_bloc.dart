@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/usecases/delete_book.dart';
+import '../../domain/usecases/enrich_book.dart';
 import '../../domain/usecases/get_books.dart';
 import '../../domain/usecases/save_book.dart';
 import '../../domain/usecases/update_book.dart';
@@ -12,17 +13,20 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
   final SaveBook saveBook;
   final UpdateBook updateBook;
   final DeleteBook deleteBook;
+  final EnrichBook enrichBook;
 
   LibraryBloc({
     required this.getBooks,
     required this.saveBook,
     required this.updateBook,
     required this.deleteBook,
+    required this.enrichBook,
   }) : super(LibraryInitial()) {
     on<LoadLibrary>(_onLoadLibrary);
     on<SaveBookEvent>(_onSaveBook);
     on<UpdateBookEvent>(_onUpdateBook);
     on<DeleteBookEvent>(_onDeleteBook);
+    on<EnrichBookEvent>(_onEnrichBook);
   }
 
   Future<void> _onLoadLibrary(
@@ -73,6 +77,23 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     result.fold(
       (failure) => emit(LibraryError(failure.message)),
       (_) => add(LoadLibrary()),
+    );
+  }
+
+  Future<void> _onEnrichBook(
+    EnrichBookEvent event,
+    Emitter<LibraryState> emit,
+  ) async {
+    final enrichResult = await enrichBook(event.book);
+    await enrichResult.fold(
+      (failure) async => emit(LibraryError(failure.message)),
+      (enrichedBook) async {
+        final updateResult = await updateBook(enrichedBook);
+        updateResult.fold(
+          (failure) => emit(LibraryError(failure.message)),
+          (_) => add(LoadLibrary()),
+        );
+      },
     );
   }
 }

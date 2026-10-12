@@ -80,6 +80,18 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
         TextEditingController(text: _currentBook.author ?? '');
     final yearController =
         TextEditingController(text: _currentBook.year?.toString() ?? '');
+    final genreController =
+        TextEditingController(text: _currentBook.genre ?? '');
+    final publisherController =
+        TextEditingController(text: _currentBook.publisher ?? '');
+    final cityController =
+        TextEditingController(text: _currentBook.city ?? '');
+    final pagesController =
+        TextEditingController(text: _currentBook.pages?.toString() ?? '');
+    final isbnController =
+        TextEditingController(text: _currentBook.isbn ?? '');
+    final udcController = TextEditingController(text: _currentBook.udc ?? '');
+    final bbkController = TextEditingController(text: _currentBook.bbk ?? '');
     final descController =
         TextEditingController(text: _currentBook.description ?? '');
 
@@ -109,6 +121,51 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                 ),
                 const SizedBox(height: 12),
                 TextField(
+                  controller: genreController,
+                  decoration: const InputDecoration(labelText: 'Жанр'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: publisherController,
+                  decoration: const InputDecoration(labelText: 'Издательство'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: cityController,
+                  decoration: const InputDecoration(labelText: 'Город издания'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: pagesController,
+                  keyboardType: TextInputType.number,
+                  decoration:
+                      const InputDecoration(labelText: 'Количество страниц'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: isbnController,
+                  decoration: const InputDecoration(labelText: 'ISBN'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: udcController,
+                        decoration: const InputDecoration(labelText: 'УДК'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: bbkController,
+                        decoration: const InputDecoration(labelText: 'ББК'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
                   controller: descController,
                   maxLines: 3,
                   decoration:
@@ -128,6 +185,25 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                   title: titleController.text.trim(),
                   author: authorController.text.trim(),
                   year: int.tryParse(yearController.text.trim()),
+                  genre: genreController.text.trim().isNotEmpty
+                      ? genreController.text.trim()
+                      : null,
+                  publisher: publisherController.text.trim().isNotEmpty
+                      ? publisherController.text.trim()
+                      : null,
+                  city: cityController.text.trim().isNotEmpty
+                      ? cityController.text.trim()
+                      : null,
+                  pages: int.tryParse(pagesController.text.trim()),
+                  isbn: isbnController.text.trim().isNotEmpty
+                      ? isbnController.text.trim()
+                      : null,
+                  udc: udcController.text.trim().isNotEmpty
+                      ? udcController.text.trim()
+                      : null,
+                  bbk: bbkController.text.trim().isNotEmpty
+                      ? bbkController.text.trim()
+                      : null,
                   description: descController.text.trim().isNotEmpty
                       ? descController.text.trim()
                       : null,
@@ -168,7 +244,7 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                       .add(DeleteBookEvent(_currentBook.id!));
                 }
                 Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop(); // Возвращаемся в библиотеку
+                Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Книга удалена')),
                 );
@@ -178,6 +254,33 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: Theme.of(context).textTheme.bodyMedium,
+                children: [
+                  TextSpan(
+                    text: '$label: ',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(text: value),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -206,7 +309,7 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Центрированная крупная обложка
+            // Обложка
             Center(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -217,7 +320,8 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                             .replaceFirst('http:', 'https:'),
                         height: 220,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(
                           height: 180,
                           width: 130,
                           color: theme.colorScheme.surfaceContainerHighest,
@@ -234,7 +338,7 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
             ),
             const SizedBox(height: 20),
 
-            // Заголовок (без ограничения строк)
+            // Заголовок
             Text(
               _currentBook.title ?? 'Без названия',
               style: theme.textTheme.headlineSmall?.copyWith(
@@ -254,6 +358,73 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
 
             const Divider(),
             const SizedBox(height: 12),
+
+            // Расширенные метаданные
+            Text(
+              'Сведения об издании',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  children: [
+                    if (_currentBook.genre != null &&
+                        _currentBook.genre!.isNotEmpty)
+                      _buildInfoRow(Icons.category_outlined, 'Жанр',
+                          _currentBook.genre!),
+                    if (_currentBook.publisher != null &&
+                        _currentBook.publisher!.isNotEmpty)
+                      _buildInfoRow(
+                        Icons.business_outlined,
+                        'Издательство',
+                        '${_currentBook.publisher!}${_currentBook.city != null ? ' (${_currentBook.city})' : ''}',
+                      ),
+                    if (_currentBook.pages != null)
+                      _buildInfoRow(Icons.menu_book_outlined, 'Объем',
+                          '${_currentBook.pages} стр.'),
+                    if (_currentBook.isbn != null &&
+                        _currentBook.isbn!.isNotEmpty)
+                      _buildInfoRow(
+                          Icons.qr_code_outlined, 'ISBN', _currentBook.isbn!),
+                    if (_currentBook.udc != null &&
+                        _currentBook.udc!.isNotEmpty)
+                      _buildInfoRow(Icons.tag, 'УДК', _currentBook.udc!),
+                    if (_currentBook.bbk != null &&
+                        _currentBook.bbk!.isNotEmpty)
+                      _buildInfoRow(Icons.tag, 'ББК', _currentBook.bbk!),
+                    if ((_currentBook.genre == null ||
+                            _currentBook.genre!.isEmpty) &&
+                        (_currentBook.publisher == null ||
+                            _currentBook.publisher!.isEmpty) &&
+                        _currentBook.pages == null &&
+                        (_currentBook.isbn == null ||
+                            _currentBook.isbn!.isEmpty) &&
+                        (_currentBook.udc == null ||
+                            _currentBook.udc!.isEmpty) &&
+                        (_currentBook.bbk == null || _currentBook.bbk!.isEmpty))
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6.0),
+                        child: Text(
+                          'Дополнительные метаданные не указаны. Отредактируйте вручную.',
+                          style: TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
 
             // Блок Рейтинга
             Text(
@@ -302,7 +473,8 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
               children: [
                 // Статус "Прочитано"
                 FilterChip(
-                  label: Text(_currentBook.isRead ? 'Прочитано' : 'Не прочитано'),
+                  label:
+                      Text(_currentBook.isRead ? 'Прочитано' : 'Не прочитано'),
                   selected: _currentBook.isRead,
                   avatar: Icon(
                     _currentBook.isRead
@@ -360,7 +532,7 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
               _currentBook.description != null &&
                       _currentBook.description!.isNotEmpty
                   ? _currentBook.description!
-                  : 'Заметки отсутствуют.',
+                  : 'Заметки/описание отсутствуют.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: _currentBook.description == null ||
                         _currentBook.description!.isEmpty

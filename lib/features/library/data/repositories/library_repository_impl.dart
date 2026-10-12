@@ -77,4 +77,23 @@ class LibraryRepositoryImpl implements LibraryRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, Book>> enrichBook(Book book) async {
+    try {
+      final model = BookModel.fromEntity(book);
+      final enrichedModel = await remoteDataSource.enrichBook(model);
+      return Right(enrichedModel.toEntity());
+    } on SocketException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('TimeoutException')) {
+        return const Left(NetworkFailure(
+            'Отсутствует подключение к интернету. Проверьте соединение.'));
+      }
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

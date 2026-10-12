@@ -42,6 +42,8 @@ class _SearchBooksView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Поиск книг по фото')),
       floatingActionButton: FloatingActionButton(
@@ -51,7 +53,16 @@ class _SearchBooksView extends StatelessWidget {
       body: BlocBuilder<BookScannerBloc, BookScannerState>(
         builder: (context, scanState) {
           if (scanState is BookScannerLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Распознаем и обогащаем данные с фото...'),
+                ],
+              ),
+            );
           }
           if (scanState is BookScannerError) {
             final isNetworkError = scanState.message.contains('интернет') ||
@@ -98,10 +109,12 @@ class _SearchBooksView extends StatelessWidget {
                     ? libraryState.books
                     : <Book>[];
 
-                return ListView.builder(
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: scanState.books.length,
-                  itemBuilder: (_, i) {
-                    final book = scanState.books[i];
+                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final book = scanState.books[index];
                     final isSaved = savedBooks.any(
                       (b) =>
                           b.title != null &&
@@ -112,30 +125,70 @@ class _SearchBooksView extends StatelessWidget {
                               book.author?.trim().toLowerCase(),
                     );
 
+                    final hasThumbnail = book.thumbnailUrl != null &&
+                        book.thumbnailUrl!.isNotEmpty;
+
+                    final subtitleParts = <String>[];
+                    if (book.author != null && book.author!.isNotEmpty) {
+                      subtitleParts.add(book.author!);
+                    }
+                    if (book.year != null) {
+                      subtitleParts.add('${book.year} г.');
+                    }
+                    if (book.publisher != null && book.publisher!.isNotEmpty) {
+                      subtitleParts.add(book.publisher!);
+                    }
+                    if (book.genre != null && book.genre!.isNotEmpty) {
+                      subtitleParts.add(book.genre!);
+                    }
+
                     return ListTile(
-                      title: Text(book.title ?? 'Без названия'),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: hasThumbnail
+                            ? Image.network(
+                                book.thumbnailUrl!.replaceFirst('http:', 'https:'),
+                                width: 48,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, err, stack) => Container(
+                                  width: 48,
+                                  height: 72,
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  child: const Icon(Icons.book, size: 28),
+                                ),
+                              )
+                            : Container(
+                                width: 48,
+                                height: 72,
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                child: const Icon(Icons.book, size: 28),
+                              ),
+                      ),
+                      title: Text(
+                        book.title ?? 'Без названия',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       subtitle: Text(
-                        '${book.author ?? 'Неизвестный автор'}${book.year != null ? ' • ${book.year}' : ''}',
+                        subtitleParts.isNotEmpty
+                            ? subtitleParts.join(' • ')
+                            : 'Сведения отсутствуют',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       trailing: IconButton(
                         icon: Icon(
                           isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
                           color: isSaved
-                              ? Theme.of(context).colorScheme.primary
+                              ? theme.colorScheme.primary
                               : null,
                         ),
                         onPressed: isSaved
                             ? null
                             : () {
-                                context.read<LibraryBloc>().add(
-                                      SaveBookEvent(
-                                        Book(
-                                          title: book.title,
-                                          author: book.author,
-                                          year: book.year,
-                                        ),
-                                      ),
-                                    );
+                                context.read<LibraryBloc>().add(SaveBookEvent(book));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Книга добавлена в библиотеку'),

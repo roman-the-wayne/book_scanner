@@ -19,6 +19,7 @@ import '../../features/library/domain/usecases/save_book.dart';
 import '../../features/library/domain/usecases/search_books_online.dart';
 import '../../features/library/domain/usecases/update_book.dart';
 import '../../features/library/domain/usecases/delete_book.dart';
+import '../../features/library/domain/usecases/enrich_book.dart';
 import '../../features/library/presentation/bloc/library_bloc.dart';
 import '../../features/library/presentation/bloc/online_search_bloc/online_search_bloc.dart';
 import '../theme/theme_cubit.dart';
@@ -63,16 +64,23 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UpdateBook(sl()));
   sl.registerLazySingleton(() => DeleteBook(sl()));
   sl.registerLazySingleton(() => SearchBooksOnline(sl()));
+  sl.registerLazySingleton(() => EnrichBook(sl()));
 
   // ─── BLoC / Cubit ───────────────────────────
   sl.registerFactory(() => ThemeCubit(sharedPreferences: sl()));
-  sl.registerFactory(() => BookScannerBloc(scanBooks: sl()));
+  sl.registerFactory(
+    () => BookScannerBloc(
+      scanBooks: sl(),
+      enrichBook: sl(),
+    ),
+  );
   sl.registerFactory(
     () => LibraryBloc(
       getBooks: sl(),
       saveBook: sl(),
       updateBook: sl(),
       deleteBook: sl(),
+      enrichBook: sl(),
     ),
   );
   sl.registerFactory(() => OnlineSearchBloc(searchBooksOnline: sl()));
