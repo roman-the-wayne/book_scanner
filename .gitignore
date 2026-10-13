@@ -47,3 +47,4 @@ app.*.map.json
 
 # environment
 .env
+android/key.properties\nandroid/app/upload-keystore.jks
